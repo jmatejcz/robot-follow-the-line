@@ -12,7 +12,7 @@ from ev3dev2.sensor.lego import ColorSensor, InfraredSensor
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, OUTPUT_C, SpeedPercent, MoveTank, MediumMotor
 
 # motor_crane = MediumMotor(OUTPUT_C)
-# sensor_eyes = InfraredSensor(INPUT_2)
+sensor_eyes = InfraredSensor(INPUT_2)
 
 
 # # m.run_forever()
@@ -49,7 +49,10 @@ color_name_value_dict = {
 
 
 BLACKS = ['Black','Brown']
-YELLOWS = [4]
+YELLOWS = ['Yellow', 'Green']
+RED = ['Red']
+GREEN = ['Green']
+BLUE = ['Blue']
 
 
 
@@ -64,9 +67,10 @@ i = 0
 # jak prawy będzie czarny i lewy biały -> skręć w prawo
 
 # wolne w maire dziala
-speed_straigt = 35
-speed_turn = 20
-SLEEP_TIME = 0.15
+speed_straigt = 15
+speed_turn = 15
+# SLEEP_TIME = 0.15
+ROT_90 = 1
 
 # speed_straigt = 25
 # speed_turn = 15
@@ -138,6 +142,37 @@ while True:
                 if right_color in BLACKS and left_color in BLACKS:
                     break
 
+        # czerowny po prawej
+        elif right_color in RED:
+            print_colors(right_color, left_color)
+            print("obkrecam 90 stopni bo widze czerwony")
+            left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
+            right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+
+            # cofam 
+            while sensor_eyes.proximity > 25:
+                print("Distance: {}".format(sensor_eyes.proximity))
+                left_motor.on(SpeedPercent(-speed_straigt))
+                right_motor.on(SpeedPercent(-speed_straigt))
+
+            print("podnosze dzwig i ide spanko")
+            left_motor.on(SpeedPercent(0))
+            right_motor.on(SpeedPercent(0))
+            sleep(2.0)
+
+
+
+        # # zolty po prawej
+        # elif right_color in YELLOWS:
+        #     print_colors(right_color, left_color)
+        #     left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
+        #     right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+
+        # # zielony po prawej
+        # elif right_color in GREEN:
+        #     print_colors(right_color, left_color)
+        #     left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
+        #     right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
         else:
             
             print_colors(right_color, left_color)
@@ -146,6 +181,8 @@ while True:
             right_motor.on(SpeedPercent(speed_straigt))
             left_motor.on(SpeedPercent(speed_straigt))
         # sleep(0.1)
+
+
 
 
     except (OSError, ValueError) as e:
