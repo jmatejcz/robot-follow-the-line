@@ -1,117 +1,69 @@
 #!/usr/bin/env python3
 
-# OUTPUT_A - prawy motor
-# OUTPUT_B - lewy motor
-# INPUT_2 - prawy sensor
-# INPUT_3 - lewy sensor
-
 from time import sleep
 import ev3dev.ev3 as ev3
 from ev3dev2.sensor import INPUT_2, INPUT_3, INPUT_1
 from ev3dev2.sensor.lego import ColorSensor, InfraredSensor
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, OUTPUT_C,OUTPUT_B, SpeedPercent, MoveTank, MediumMotor
 
-motor_crane = MediumMotor(OUTPUT_D)
-sensor_eyes = InfraredSensor(INPUT_2)
-#minus to do góry
-
-# # m.run_forever()
-
-# while 1>0:
-# # sleep(0.5)
-#     print("Distance: {}".format(sensor_eyes.proximity))     
-# # motor_crane.on(SpeedPercent(-30))
-# # # sleep(3)
-# # motor_crane.on_for_rotations(SpeedPercent(15), 4)
-# # sleep(3)
-# # motor_crane.on_for_rotations(SpeedPercent(-15), 2)
-
-
-
-color_value_name_dict = {
-        0: 'No color',
-        1: 'Black',
-        2: 'Blue',
-        3: 'Green',
-        4: 'Yellow',
-        5: 'Red',
-        6: 'White',
-        7: 'Brown',
-}
-
-color_name_value_dict = {
-    'No color': 0,
-    'Black': 1,
-    'Blue': 2,
-    'Green': 3,
-    'Yellow': 4,
-    'Red': 5,
-    'White': 6,
-    'Brown': 7
-}
-
-
-BLACKS = ['Black','Brown', 'Red']
-YELLOWS = ['Yellow', 'Green']
-RED = ['Red']
-GREEN = ['Green']
-BLUE = ['Blue']
-
-
+motor_crane = MediumMotor(OUTPUT_B)
+sensor_eyes = InfraredSensor(INPUT_3)
 
 right_motor = LargeMotor(OUTPUT_A)
-left_motor = LargeMotor(OUTPUT_C)
+left_motor = LargeMotor(OUTPUT_D)
 
-right_sensor = ColorSensor(INPUT_3)
-left_sensor = ColorSensor(INPUT_1)
+right_sensor = ColorSensor(INPUT_1)
+left_sensor = ColorSensor(INPUT_2)
 
-COLOR_DETECT_COUNTER = 0
+# czerwony = (200,7,10)
+# blue = (11, 50, 160)
+# żółty = (255, 200, 50)
+# zielony = (10, 70,50)
+# biały = (255, 220, 255)
+# czarny = (5, 5, 10)
 
-i = 0
+def get_color(sensor):
+    r, g, b = sensor.rgb
+    if r > 150 and g < 40 and b < 40:
+        return 'Red'
+    elif r < 50 and g < 80 and b > 120:
+        return 'Blue'
+    elif r > 150 and g > 120:
+        if b < 80:
+            return 'Yellow'
+        else:
+            return 'White'
+    elif r < 30 and g < 30 and b < 30:
+        return 'Black'
+    
+    return 'ERROR'
 
-# 2 białe - prosto
-# jak prawy będzie czarny i lewy biały -> skręć w prawo
-
-# wolne w maire dziala
-speed_straigt = 15
+speed_straigt = 25
 speed_turn = 15
-# SLEEP_TIME = 0.15
 ROT_90 = 1
-
-# speed_straigt = 25
-# speed_turn = 15
-
-state_dict = {
-    0: 'prosto',
-    1: 'prawo',
-    2: 'lewo'
-}
-
-# zólty = blue
-# blue = blue
-# red = red
-# green = green
+TURN = ''
+ROT_TIME = 2.5
+BLACKS = ['Black']
+ITEM = False
+CRANE_ROTATIONS=5
 
 def print_colors(r_color, l_color):
-    # print("prawy kolor: {}".format(color_value_name_dict[r_color]))
-    # print("lewy kolor: {}".format(color_value_name_dict[l_color]))
     print("prawy kolor: {}".format(r_color))
     print("lewy kolor: {}".format(l_color))
 
 
 def turn_180():
-    left_motor.on_for_rotations(SpeedPercent(-speed_turn), 2*ROT_90)
-    right_motor.on_for_rotations(SpeedPercent(speed_turn), 2*ROT_90)
+    left_motor.on(SpeedPercent(-speed_turn))
+    right_motor.on(SpeedPercent(speed_turn))
 
 
 while True:
     try:
-        left_color = color_value_name_dict[left_sensor.color]
-        right_color = color_value_name_dict[right_sensor.color]
+        left_color = get_color(left_sensor)
+        right_color = get_color(right_sensor)
+        print('left: {}'.format(left_sensor.rgb))
+        print('right: {}'.format(right_sensor.rgb))
         if right_color in BLACKS and left_color == 'White':
-            if right_color == 'Red':
-                COLOR_DETECT_COUNTER += 1
-
             while True:
                 print_colors(right_color, left_color)
                 print("skrecam w prawo")
@@ -119,109 +71,121 @@ while True:
                 right_motor.on(SpeedPercent(-speed_turn))
                 left_motor.on(SpeedPercent(speed_turn))
 
-                # sleep(SLEEP_TIME)
-                left_color = color_value_name_dict[left_sensor.color]
-                right_color = color_value_name_dict[right_sensor.color]
-                
-
+                left_color = get_color(left_sensor)
+                right_color = get_color(right_sensor)
                 print_colors(right_color, left_color)
 
                 if right_color == 'White' and left_color == 'White':
                     break
 
                 # zapobiega wyjściu na skrzyżowaniu
-                if right_color in BLACKS and left_color in BLACKS:
+                if right_color == 'Black' and left_color == 'Black':
                     break
 
         # skręt w lewo
         elif right_color == 'White' and left_color in BLACKS:
-            if left_color == 'Red':
-                COLOR_DETECT_COUNTER += 1
-
             while True:
-                
-                
                 print_colors(right_color, left_color)
                 print("skrecam w lewo")
 
                 left_motor.on(SpeedPercent(-speed_turn))
                 right_motor.on(SpeedPercent(speed_turn))
 
-                # sleep(SLEEP_TIME)
-                left_color = color_value_name_dict[left_sensor.color]
-                right_color = color_value_name_dict[right_sensor.color]
+                left_color = get_color(left_sensor)
+                right_color = get_color(right_sensor)
 
                 print_colors(right_color, left_color)
 
                 if right_color == 'White' and left_color == 'White':
                     break
-                if right_color in BLACKS and left_color in BLACKS:
+                if right_color == 'Black' and left_color == 'Black':
                     break
 
-        # czerowny po prawej
-        # elif right_color in RED:
-        #     print_colors(right_color, left_color)
-        #     print("obkrecam 90 stopni bo widze czerwony")
-        #     left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
-        #     right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+        # wjechaliśmy na pole koloru
+        elif right_color in ['Red', 'Yellow', 'Blue'] and left_color in ['Red', 'Yellow', 'Blue']:
+            left_color = get_color(left_sensor)
+            right_color = get_color(right_sensor)
 
-        #     # cofam 
-        #     while sensor_eyes.proximity > 25:
-        #         print("Distance: {}".format(sensor_eyes.proximity))
-        #         left_motor.on(SpeedPercent(-speed_straigt))
-        #         right_motor.on(SpeedPercent(-speed_straigt))
+            right_motor.on(SpeedPercent(-speed_turn))
+            left_motor.on(SpeedPercent(-speed_turn))
+            sleep(3)
 
-        #     print("podnosze dzwig i ide spanko")
-        #     left_motor.on(SpeedPercent(0))
-        #     right_motor.on(SpeedPercent(0))
-        #     sleep(2.0)
+            if not ITEM:
+                while sensor_eyes.proximity > 30:
+                    turn_180()
+                    sleep(0.5)
+                    print("Distance: {}".format(sensor_eyes.proximity))
 
+                while sensor_eyes.proximity > 13:
+                    right_motor.on(SpeedPercent(-speed_turn))
+                    left_motor.on(SpeedPercent(-speed_turn))
+                    print("cofka Distance: {}".format(sensor_eyes.proximity))
 
-        # elif right_color == 'Red' and left_color == 'Red':
-        #     turn_180()
-        #     # jedziemy w tył while odległość > ileś
-        #     # cofam 
-        #     while sensor_eyes.proximity > 30:
-        #         print("Distance: {}".format(sensor_eyes.proximity))
-        #         left_motor.on(SpeedPercent(-speed_straigt))
-        #         right_motor.on(SpeedPercent(-speed_straigt))
-
-        #     # koniec cofki - podnosimy
-        #     motor_crane.on_for_rotations(SpeedPercent(-15), 4)
+                left_motor.on(SpeedPercent(0))
+                right_motor.on(SpeedPercent(0))
+                motor_crane.on_for_rotations(SpeedPercent(-20), CRANE_ROTATIONS)
+                ITEM = True
+            else:
+                turn_180()
+                sleep(5)
+                left_motor.on(SpeedPercent(0))
+                right_motor.on(SpeedPercent(0))
+                motor_crane.on_for_rotations(SpeedPercent(20), CRANE_ROTATIONS)
+                ITEM = False
     
-        #     # podniśliśmy
-        #     # jedź prosto dopóki nie są 2 czerwone
-        #     while right_color == 'Red' and left_color == 'Red':
-        #         left_color = color_value_name_dict[left_sensor.color]
-        #         right_color = color_value_name_dict[right_sensor.color]
+            while right_color == get_color(right_sensor) and left_color == get_color(left_sensor):
+                left_color = get_color(left_sensor)
+                right_color = get_color(right_sensor)
 
-        #         left_motor.on(SpeedPercent(speed_straigt))
-        #         right_motor.on(SpeedPercent(speed_straigt))
+                left_motor.on(SpeedPercent(speed_straigt))
+                right_motor.on(SpeedPercent(speed_straigt))
 
-        # # zolty po prawej
-        # elif right_color in YELLOWS:
-        #     print_colors(right_color, left_color)
-        #     left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
-        #     right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+        elif right_color in ['Red', 'Yellow', 'Blue'] and left_color == 'White' and TURN == '':
+            print_colors(right_color, left_color)
+            right_motor.on(SpeedPercent(-speed_turn))
+            left_motor.on(SpeedPercent(speed_turn))
+            sleep(ROT_TIME)
 
-        # # zielony po prawej
-        # elif right_color in GREEN:
-        #     print_colors(right_color, left_color)
-        #     left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
-        #     right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+            TURN = 'RIGHT'
+
+        
+        elif left_color in ['Red', 'Yellow', 'Blue'] and right_color == 'White' and TURN == '':
+            print_colors(right_color, left_color)
+            right_motor.on(SpeedPercent(speed_turn))
+            left_motor.on(SpeedPercent(-speed_turn))
+            sleep(ROT_TIME)
+            TURN = 'LEFT'
+
+        elif left_color in BLACKS and right_color in ['Red', 'Yellow', 'Blue'] or right_color in BLACKS and left_color in ['Red', 'Yellow', 'Blue'] and TURN:
+            if TURN == 'LEFT':
+                print("WYJEZDZAM Z DOJAZDU DO POLA")
+                left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
+                right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+                TURN = ''
+            else:
+                print("WYJEZDZAM Z DOJAZDU DO POLA")
+                left_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+                right_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
+                TURN = ''
+
+
         else:
             print_colors(right_color, left_color)
             print("jade prosto")
 
+            if right_color == 'Black' and left_color == 'Black' and TURN == 'LEFT':
+                print("WYJEZDZAM Z DOJAZDU DO POLA")
+                left_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
+                right_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+                TURN = ''
+            elif right_color == 'Black' and left_color == 'Black' and TURN == 'RIGHT':
+                print("WYJEZDZAM Z DOJAZDU DO POLA")
+                left_motor.on_for_rotations(SpeedPercent(speed_turn), ROT_90)
+                right_motor.on_for_rotations(SpeedPercent(-speed_turn), ROT_90)
+                TURN = ''
+
             right_motor.on(SpeedPercent(speed_straigt))
             left_motor.on(SpeedPercent(speed_straigt))
 
-        # sleep(0.1)
-
-
-
-
     except Exception as e:
         continue
-
-
